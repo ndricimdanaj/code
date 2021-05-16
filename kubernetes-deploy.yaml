@@ -1,7 +1,7 @@
 - hosts: localhost
   gather_facts: false
   vars:
-    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+    #ansible_python_interpreter: '{{ ansible_playbook_python }}'
     image_name: 'ndricimdanaj/javacicd'
     image_tag: latest
     replicas: 2
@@ -20,7 +20,7 @@
         kind: Deployment
         namespace: default
         name: web
-    - name: Create a Deployment for Hello Go.
+    - name: Create a Deployment for Hello Java.
       k8s:
         state: present
         validate_certs: 'no'
