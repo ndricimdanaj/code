@@ -75,7 +75,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([kubeconfigFile(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                        sh "ansible-playbook  kubernetes-deployment.yaml"
+                        sh "ansible-playbook  kubernetes-deploy.yaml"
                     }
                 }
             }
