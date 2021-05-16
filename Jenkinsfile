@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         registry = "docker.io/ndricimdanaj/javacicd"
-        registryCredential = 'dockerhub'
+        registryCredential = 'docker'
         dockerImage = ''
     }
 
@@ -74,8 +74,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    def image_id = registry + ":$BUILD_NUMBER"
-                    sh "ansible-playbook  kubernetes-deployment.yaml"
+                    withCredentials([kubeconfigFile(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh 'use $KUBECONFIG' // environment variable; not pipeline variable
+                        sh "ansible-playbook  kubernetes-deployment.yaml"
+                    }
                 }
             }
         }
