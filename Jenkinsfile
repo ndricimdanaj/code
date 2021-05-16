@@ -74,9 +74,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    kubernetesDeploy(configs: "deployment.yaml", kubeconfigId: "kubeconfig", deleteResource: true)
+                    try {
+                        kubernetesDeploy(configs: "deployment.yaml", kubeconfigId: "kubeconfig", deleteResource: true)
+                        kubernetesDeploy(configs: "service.yaml", kubeconfigId: "kubeconfig", deleteResource: true)
+                    } catch (Exception e) {
+                       
+                    }
+                    
                     kubernetesDeploy(configs: "deployment.yaml", kubeconfigId: "kubeconfig")
-                    kubernetesDeploy(configs: "service.yaml", kubeconfigId: "kubeconfig", deleteResource: true)
                     kubernetesDeploy(configs: "service.yaml", kubeconfigId: "kubeconfig")
                     // withCredentials([kubeconfigFile(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     //     sh "echo $KUBECONFIG > kubeconfig"
