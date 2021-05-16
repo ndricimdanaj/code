@@ -75,6 +75,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([kubeconfigFile(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh "python -m pip install --upgrade --user openshift"
                         sh "ansible-playbook  kubernetes-deploy.yaml"
                     }
                 }
