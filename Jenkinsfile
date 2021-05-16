@@ -1,71 +1,84 @@
 pipeline {
+
     agent any
+
     environment {
-        registry = "magalixcorp/k8scicd"
-        GOCACHE = "/tmp"   
-    }   
+        registry = "docker.io/ndricimdanaj/javacicd"
+        registryCredential = 'dockerhub'
+        dockerImage = ''
+    }
+
     stages {
-        stage('Build') {
-            agent { 
+        stage("build java application") {
+            agent {
                 docker {
-                    image 'golang'
+                    image 'maven:3-alpine'
+                    args '-v /root/.m2:/root/.m2'
                 }
             }
-            
-            steps { 
-                // Create our project directory. 
-                sh 'cd ${GOPATH}/src'
-                sh 'mkdir -p ${GOPATH}/src/hello-world' 
-                // Copy all files in our Jenkins workspace to our project directory. 
-                sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-world' 
-                // Build the app.
-                sh 'go build'
-            }          
-        }       
-        
-        stage('Test') {           
-            agent {               
-                docker {                   
-                    image 'golang'               
-                }           
-            }           
-            
-            steps {                               
-                // Create our project directory.               
-                sh 'cd ${GOPATH}/src'               
-                sh 'mkdir -p ${GOPATH}/src/hello-world'               
-                // Copy all files in our Jenkins workspace to our project directory.                              
-                sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-world'               
-                // Remove cached test results.               
-                sh 'go clean -cache'               
-                // Run Unit Tests.               
-                sh 'go test ./... -v -short'                      
-            }       
-        }       
-        
-        stage('Publish') {           
-            environment {               
-                registryCredential = 'dockerhub'           
-            }           
-            
-            steps{               
-                script {                   
-                    def appimage = docker.build registry + ":$BUILD_NUMBER"                   
-                    docker.withRegistry( '', registryCredential ) {                       
-                        appimage.push()                       
-                        appimage.push('latest')                   
-                    }               
-                }           
-            }       
-        }       
-        
-        stage ('Deploy') {           
-            steps {               
-                script{                   
-                    def image_id = registry + ":$BUILD_NUMBER"                   
-                    sh "ansible-playbook  playbook.yml --extra-vars \"image_id=${image_id}\""               
-                }           
-            }       
-        }   
+
+            steps {
+
+                sh 'mvn -B -DskipTests clean package'
+                stash includes: 'target/*.jar', name: 'targetfiles'
+            }
+        }
+
+/*         stage('Test') {
+            agent {
+                docker {
+                    image 'maven:3-alpine'
+                    args '-v /root/.m2:/root/.m2'
+                }
+            }
+
+            steps {
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        } */
+
+        stage('Building image') {
+            steps {
+                script {
+                    unstash 'targetfiles'
+                    sh 'ls -l -R'
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER"
+                }
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                script {
+                    docker.withRegistry('', registryCredential) {
+                        dockerImage.push()
+                        dockerImage.push('latest')
+                    }
+                }
+            }
+        }
+
+        stage('Remove Unused docker image') {
+            steps {
+                script {
+                    sh "docker rmi -f $registry:$BUILD_NUMBER"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    def image_id = registry + ":$BUILD_NUMBER"
+                    sh "ansible-playbook  kubernetes-deployment.yaml"
+                }
+            }
+        }
+
     }
 }
