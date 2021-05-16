@@ -77,7 +77,7 @@ pipeline {
                     withCredentials([kubeconfigFile(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh "echo $KUBECONFIG"
                         //sh "echo $KUBECONFIG > kubeconfig"
-                        sh 'export KUBECONFIG=$KUBECONFIG
+                        sh "export KUBECONFIG=$KUBECONFIG"
                         sh "kubectl get nodes"
                         sh "python -m pip install --upgrade --user openshift"
                         sh "ansible-playbook  kubernetes-deploy.yaml"
